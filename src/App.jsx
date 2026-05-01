@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { Plus, Play, Trash2, ArrowLeft, RotateCcw, ChevronRight, ChevronLeft, Mic2, Save, X } from 'lucide-react'
+import { Plus, Play, Trash2, ArrowLeft, RotateCcw, ChevronRight, ChevronLeft, Mic2, Save, X, Edit2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 // Utility to split text into objects: { speaker, text }
@@ -68,6 +68,12 @@ const App = () => {
     setEditingSet(null)
   }
 
+  const handleEditSet = (set, e) => {
+    e.stopPropagation()
+    setEditingSet(set)
+    setView('editor')
+  }
+
   return (
     <div className="container">
       <AnimatePresence mode="wait">
@@ -91,15 +97,20 @@ const App = () => {
                 <div key={set.id} className="glass-card" onClick={() => handleStartSet(set)} style={{ cursor: 'pointer', position: 'relative' }}>
                   <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>{set.title}</h3>
                   <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
-                    {set.content}
+                    {set.content.replace(/\|\|\|/g, ' ')}
                   </p>
                   <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ color: '#6366f1', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: 600 }}>
                       <Play size={16} /> เริ่มอ่าน
                     </div>
-                    <button className="btn btn-danger" style={{ padding: '0.5rem' }} onClick={(e) => handleDeleteSet(set.id, e)}>
-                      <Trash2 size={16} />
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button className="btn btn-secondary" style={{ padding: '0.5rem', minHeight: 'auto' }} onClick={(e) => handleEditSet(set, e)} title="แก้ไข">
+                        <Edit2 size={16} />
+                      </button>
+                      <button className="btn btn-danger" style={{ padding: '0.5rem', minHeight: 'auto' }} onClick={(e) => handleDeleteSet(set.id, e)} title="ลบ">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
