@@ -133,6 +133,7 @@ const Editor = ({ initialData, onSave, onBack }) => {
   const parseContent = (content) => {
     if (!content) return [{ speaker: 'A', text: '' }]
     return content.split('|||').map(s => {
+      if (!s.includes(':')) return { speaker: 'A', text: s }
       const [speaker, ...textParts] = s.split(':')
       return { speaker: speaker || 'A', text: textParts.join(':') }
     })
@@ -265,7 +266,7 @@ const Editor = ({ initialData, onSave, onBack }) => {
       <div style={{ display: 'flex', gap: '1rem' }}>
         <button 
           className="btn btn-primary" 
-          disabled={!title || sentences.every(s => !s.trim())} 
+          disabled={!title || sentences.every(s => !s.text.trim())} 
           onClick={handleSave}
           style={{ flex: 1, padding: '1rem' }}
         >
