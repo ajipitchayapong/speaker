@@ -478,15 +478,46 @@ const App = () => {
                         gap: "0.5rem",
                       }}
                     >
-                      <img
-                        src={user.user_metadata.avatar_url}
+                      <div
                         style={{
                           width: "30px",
                           height: "30px",
                           borderRadius: "50%",
+                          background: "var(--primary)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          overflow: "hidden",
+                          position: "relative",
+                          border: "1px solid rgba(255,255,255,0.1)",
                         }}
-                        alt="avatar"
-                      />
+                      >
+                        <span
+                          style={{
+                            fontSize: "0.8rem",
+                            fontWeight: 700,
+                            color: "white",
+                          }}
+                        >
+                          {user.user_metadata.full_name?.charAt(0) || "U"}
+                        </span>
+                        <img
+                          src={user.user_metadata.avatar_url}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            transition: "opacity 0.2s",
+                          }}
+                          alt="avatar"
+                          onError={(e) => {
+                            e.target.style.opacity = "0";
+                          }}
+                        />
+                      </div>
                       <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>
                         {user.user_metadata.full_name}
                       </span>
@@ -661,9 +692,9 @@ const App = () => {
                 {/* Add New Card */}
                 <motion.div
                   whileHover={{
-                    backgroundColor: "rgba(99, 102, 241, 0.05)",
+                    backgroundColor: "rgba(37, 99, 235, 0.05)",
                     borderColor: "var(--primary)",
-                    boxShadow: "0 0 20px rgba(99, 102, 241, 0.2)",
+                    boxShadow: "0 0 20px rgba(37, 99, 235, 0.2)",
                   }}
                   transition={{ duration: 0.05, ease: "easeOut" }}
                   whileTap={{ scale: 0.98 }}
@@ -689,7 +720,7 @@ const App = () => {
                       width: "60px",
                       height: "60px",
                       borderRadius: "50%",
-                      background: "rgba(99, 102, 241, 0.1)",
+                      background: "rgba(37, 99, 235, 0.1)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -708,9 +739,9 @@ const App = () => {
                     key={set.id}
                     className="lesson-card glass-card"
                     whileHover={{
-                      backgroundColor: "rgba(99, 102, 241, 0.08)",
+                      backgroundColor: "rgba(37, 99, 235, 0.08)",
                       borderColor: "var(--primary)",
-                      boxShadow: "0 0 20px rgba(99, 102, 241, 0.2)",
+                      boxShadow: "0 0 20px rgba(37, 99, 235, 0.2)",
                     }}
                     transition={{ duration: 0.05, ease: "easeOut" }}
                     style={{
@@ -1130,11 +1161,11 @@ const Editor = ({ initialData, onSave, onBack, t, lang }) => {
                   zIndex: movingIndex === idx ? 10 : 1,
                   borderColor:
                     movingIndex === idx
-                      ? "rgba(99, 102, 241, 1)"
+                      ? "rgba(37, 99, 235, 1)"
                       : "rgba(255, 255, 255, 0.05)",
                   backgroundColor:
                     movingIndex === idx
-                      ? "rgba(99, 102, 241, 0.15)"
+                      ? "rgba(37, 99, 235, 0.15)"
                       : "rgba(255, 255, 255, 0.03)",
                 }}
                 transition={{
@@ -1185,7 +1216,7 @@ const Editor = ({ initialData, onSave, onBack, t, lang }) => {
                       fontSize: "1.1rem",
                       fontWeight: "800",
                       background: "rgba(0,0,0,0.4)",
-                      border: "1px solid rgba(99, 102, 241, 0.2)",
+                      border: "1px solid rgba(37, 99, 235, 0.2)",
                       color: "white",
                       cursor: "pointer",
                     }}
@@ -1760,7 +1791,7 @@ const Reader = ({ set, onBack, t }) => {
                   justifyContent: "center",
                   fontSize: "3rem",
                   fontWeight: "900",
-                  boxShadow: "0 10px 30px rgba(99, 102, 241, 0.3)",
+                  boxShadow: "0 10px 30px rgba(37, 99, 235, 0.3)",
                   color: "white",
                   border: "4px solid rgba(255, 255, 255, 0.1)",
                 }}
