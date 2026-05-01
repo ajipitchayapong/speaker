@@ -84,19 +84,30 @@ const App = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
           >
-            <header style={{ marginBottom: '3rem', textAlign: 'center' }}>
-              <h1>Chinese Reader AI</h1>
-              <h2>ฝึกฟังและอ่านภาษาจีนทีละประโยค</h2>
-              <button className="btn btn-primary" onClick={handleCreateNew}>
-                <Plus size={20} /> เพิ่มชุดบทพูดใหม่
+            <header style={{ marginBottom: '5rem', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '2rem', alignItems: 'center' }}>
+              <h1 style={{ margin: 0 }}>Chinese Reader AI</h1>
+              <h2 style={{ margin: 0 }}>ฝึกฟังและอ่านภาษาจีนทีละประโยค</h2>
+              <button className="btn btn-primary" onClick={handleCreateNew} style={{ padding: '1.25rem 2.5rem', fontSize: '1.2rem' }}>
+                <Plus size={24} /> เพิ่มชุดบทพูดใหม่
               </button>
             </header>
 
             <div className="sets-grid">
               {sets.map(set => (
-                <div key={set.id} className="glass-card" onClick={() => handleStartSet(set)} style={{ cursor: 'pointer', position: 'relative' }}>
-                  <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>{set.title}</h3>
-                  <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
+                <div key={set.id} className="glass-card" onClick={() => handleStartSet(set)} style={{ cursor: 'pointer', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                  <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem', wordBreak: 'break-word', overflowWrap: 'anywhere', lineHeight: '1.3' }}>{set.title}</h3>
+                  <p style={{ 
+                    color: 'var(--text-dim)', 
+                    fontSize: '1rem', 
+                    overflow: 'hidden', 
+                    textOverflow: 'ellipsis', 
+                    display: '-webkit-box', 
+                    WebkitLineClamp: 3, 
+                    WebkitBoxOrient: 'vertical',
+                    wordBreak: 'break-word',
+                    lineHeight: '1.5',
+                    flex: 1
+                  }}>
                     {set.content.replace(/\|\|\|/g, ' ')}
                   </p>
                   <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
