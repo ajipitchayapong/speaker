@@ -26,29 +26,114 @@ const splitSentences = (text) => {
     });
 };
 
+const translations = {
+  th: {
+    title: "Chinese Reader AI",
+    subtitle: "ฝึกฟังและอ่านภาษาจีนทีละประโยค",
+    addNew: "เพิ่มชุดบทพูดใหม่",
+    startReading: "เริ่มอ่าน",
+    edit: "แก้ไข",
+    delete: "ลบ",
+    backToHome: "กลับหน้าหลัก",
+    restart: "เริ่มใหม่",
+    loadingVoices: "กำลังโหลดเสียง...",
+    selectVoice: "เลือกเสียงพูด",
+    autoChinese: "อัตโนมัติ (ภาษาจีน)",
+    speaker: "คนพูด",
+    speakerLabel: "ผู้พูด",
+    sentenceNum: "ข้อความประโยคที่",
+    addNext: "เพิ่มประโยคถัดไป",
+    saveSet: "บันทึกชุดบทพูดทั้งหมด",
+    cancel: "ยกเลิก",
+    editSet: "แก้ไขชุดบทพูด",
+    newSet: "เพิ่มชุดบทพูดใหม่",
+    setTitle: "หัวข้อชุดบทพูด",
+    setTitlePlaceholder: "เช่น บทเรียนที่ 1...",
+    sentenceList: "รายการประโยคและการระบุคนพูด",
+    chinesePlaceholder: "พิมพ์ภาษาจีนที่นี่...",
+    startListen: "เริ่มฟังบทพูด",
+    listenAgain: "ฟังอีกครั้ง",
+    speaking: "กำลังพูด...",
+    showChinese: "แสดงข้อความภาษาจีน",
+    endOfSet: "จบชุดบทพูดแล้ว! 🎉",
+    restartAgain: "เริ่มใหม่อีกครั้ง",
+    setCount: "ลำดับที่ {current} จาก {total}",
+    exampleTitle: "ตัวอย่าง: ภาษาจีนพื้นฐาน",
+    exampleContent:
+      "你好！很高兴见到你。|||今天天气很好。|||我们要一起学习中文吗？",
+  },
+  en: {
+    title: "Chinese Reader AI",
+    subtitle: "Practice listening and reading Chinese sentence by sentence",
+    addNew: "Add New Set",
+    startReading: "Start Reading",
+    edit: "Edit",
+    delete: "Delete",
+    backToHome: "Back to Home",
+    restart: "Restart",
+    loadingVoices: "Loading voices...",
+    selectVoice: "Select Voice",
+    autoChinese: "Auto (Chinese)",
+    speaker: "Speaker",
+    speakerLabel: "Speaker",
+    sentenceNum: "Sentence number",
+    addNext: "Add Next Sentence",
+    saveSet: "Save All Sentences",
+    cancel: "Cancel",
+    editSet: "Edit Lesson Set",
+    newSet: "Add New Lesson Set",
+    setTitle: "Lesson Title",
+    setTitlePlaceholder: "e.g., Lesson 1...",
+    sentenceList: "Sentences and Speakers",
+    chinesePlaceholder: "Type Chinese here...",
+    startListen: "Start Listening",
+    listenAgain: "Listen Again",
+    speaking: "Speaking...",
+    showChinese: "Show Chinese Text",
+    endOfSet: "End of Set! 🎉",
+    restartAgain: "Restart Practice",
+    setCount: "Sentence {current} of {total}",
+    exampleTitle: "Example: Basic Chinese",
+    exampleContent:
+      "你好！很高兴见到你。|||今天天气很好。|||我们要一起学习中文吗？",
+  },
+};
+
 const App = () => {
   const [view, setView] = useState("home"); // home, reader, editor
   const [sets, setSets] = useState([]);
   const [currentSetId, setCurrentSetId] = useState(null);
   const [editingSet, setEditingSet] = useState(null);
+  const [lang, setLang] = useState("th");
 
-  // Load sets from localStorage
+  const t = translations[lang];
+
+  // Load sets and language from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem("tts-speech-sets");
-    if (saved) {
-      setSets(JSON.parse(saved));
+    const savedSets = localStorage.getItem("tts-speech-sets");
+    const savedLang = localStorage.getItem("tts-app-lang");
+
+    if (savedLang) setLang(savedLang);
+
+    if (savedSets) {
+      setSets(JSON.parse(savedSets));
     } else {
       // Default set for first time users
       const defaultSet = {
         id: Date.now(),
-        title: "ตัวอย่าง: ภาษาจีนพื้นฐาน",
-        content:
-          "你好！很高兴见到你。|||今天天气很好。|||我们要一起学习中文吗？",
+        title: translations.th.exampleTitle,
+        content: translations.th.exampleContent,
       };
       setSets([defaultSet]);
       localStorage.setItem("tts-speech-sets", JSON.stringify([defaultSet]));
     }
   }, []);
+
+  const toggleLang = () => {
+    const newLang = lang === "th" ? "en" : "th";
+    setLang(newLang);
+    localStorage.setItem("tts-app-lang", newLang);
+  };
 
   // Save sets to localStorage
   const saveToStorage = (newSets) => {
@@ -102,6 +187,29 @@ const App = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
           >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                marginBottom: "1rem",
+              }}
+            >
+              <button
+                className="btn btn-secondary"
+                onClick={toggleLang}
+                style={{
+                  minHeight: "50px",
+                  padding: "0.5rem 1.5rem",
+                  borderRadius: "15px",
+                  fontSize: "1rem",
+                  background: "rgba(255,255,255,0.1)",
+                  border: "1px solid rgba(255,255,255,0.2)",
+                }}
+              >
+                {lang === "th" ? "🇬🇧 English" : "🇹🇭 ภาษาไทย"}
+              </button>
+            </div>
+
             <header
               style={{
                 marginBottom: "6rem",
@@ -120,9 +228,7 @@ const App = () => {
                   gap: "0.5rem",
                 }}
               >
-                <h1 style={{ margin: 0, fontSize: "3.5rem" }}>
-                  Chinese Reader AI
-                </h1>
+                <h1 style={{ margin: 0, fontSize: "3.5rem" }}>{t.title}</h1>
                 <h2
                   style={{
                     margin: 0,
@@ -130,7 +236,7 @@ const App = () => {
                     color: "rgba(255,255,255,0.7)",
                   }}
                 >
-                  ฝึกฟังและอ่านภาษาจีนทีละประโยค
+                  {t.subtitle}
                 </h2>
               </div>
               <button
@@ -142,7 +248,7 @@ const App = () => {
                   borderRadius: "25px",
                 }}
               >
-                <Plus size={28} /> เพิ่มชุดบทพูดใหม่
+                <Plus size={28} /> {t.addNew}
               </button>
             </header>
 
@@ -197,7 +303,7 @@ const App = () => {
                         padding: "0.5rem",
                       }}
                     >
-                      <Play size={20} /> เริ่มอ่าน
+                      <Play size={20} /> {t.startReading}
                     </div>
 
                     <div style={{ display: "flex", gap: "0.75rem" }}>
@@ -206,7 +312,7 @@ const App = () => {
                         style={{ flex: 1, padding: "1rem" }}
                         onClick={(e) => handleEditSet(set, e)}
                       >
-                        <Edit2 size={20} /> แก้ไข
+                        <Edit2 size={20} /> {t.edit}
                       </button>
                       <button
                         className="btn btn-danger"
@@ -219,7 +325,7 @@ const App = () => {
                         }}
                         onClick={(e) => handleDeleteSet(set.id, e)}
                       >
-                        <Trash2 size={20} /> ลบ
+                        <Trash2 size={20} /> {t.delete}
                       </button>
                     </div>
                   </div>
@@ -234,6 +340,7 @@ const App = () => {
             initialData={editingSet}
             onSave={handleSaveSet}
             onBack={() => setView("home")}
+            t={t}
           />
         )}
 
@@ -241,6 +348,7 @@ const App = () => {
           <Reader
             set={sets.find((s) => s.id === currentSetId)}
             onBack={() => setView("home")}
+            t={t}
           />
         )}
       </AnimatePresence>
@@ -248,7 +356,7 @@ const App = () => {
   );
 };
 
-const Editor = ({ initialData, onSave, onBack }) => {
+const Editor = ({ initialData, onSave, onBack, t }) => {
   const [title, setTitle] = useState(initialData?.title || "");
 
   // Parse existing content: "A:text|||B:text"
@@ -264,10 +372,11 @@ const Editor = ({ initialData, onSave, onBack }) => {
   const [sentences, setSentences] = useState(
     parseContent(initialData?.content),
   );
+  const [isSpeakerPickerOpen, setIsSpeakerPickerOpen] = useState(false);
+  const [activeSentenceIndex, setActiveSentenceIndex] = useState(null);
 
   const handleAddSentence = () => {
     const lastSpeaker = sentences[sentences.length - 1]?.speaker || "A";
-    // Automatically suggest next speaker (A -> B, B -> A or just keep it)
     const nextSpeaker = lastSpeaker === "A" ? "B" : "A";
     setSentences([...sentences, { speaker: nextSpeaker, text: "" }]);
   };
@@ -283,6 +392,16 @@ const Editor = ({ initialData, onSave, onBack }) => {
     const newSentences = [...sentences];
     newSentences[index][field] = value;
     setSentences(newSentences);
+  };
+
+  const openSpeakerPicker = (index) => {
+    setActiveSentenceIndex(index);
+    setIsSpeakerPickerOpen(true);
+  };
+
+  const selectSpeaker = (speaker) => {
+    handleFieldChange(activeSentenceIndex, "speaker", speaker);
+    setIsSpeakerPickerOpen(false);
   };
 
   const handleSave = () => {
@@ -313,10 +432,10 @@ const Editor = ({ initialData, onSave, onBack }) => {
         }}
       >
         <h2 style={{ margin: 0, color: "white" }}>
-          {initialData?.id ? "แก้ไขชุดบทพูด" : "เพิ่มชุดบทพูดใหม่"}
+          {initialData?.id ? t.editSet : t.newSet}
         </h2>
         <button className="btn btn-secondary" onClick={onBack}>
-          <X size={20} /> ยกเลิก
+          <X size={20} /> {t.cancel}
         </button>
       </div>
 
@@ -329,10 +448,10 @@ const Editor = ({ initialData, onSave, onBack }) => {
             color: "var(--text-dim)",
           }}
         >
-          หัวข้อชุดบทพูด
+          {t.setTitle}
         </label>
         <input
-          placeholder="เช่น บทเรียนที่ 1..."
+          placeholder={t.setTitlePlaceholder}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           style={{ marginBottom: 0 }}
@@ -348,7 +467,7 @@ const Editor = ({ initialData, onSave, onBack }) => {
             color: "var(--text-dim)",
           }}
         >
-          รายการประโยคและการระบุคนพูด
+          {t.sentenceList}
         </label>
 
         <div
@@ -362,8 +481,8 @@ const Editor = ({ initialData, onSave, onBack }) => {
               animate={{ opacity: 1, y: 0 }}
               style={{
                 display: "flex",
+                flexDirection: "column",
                 gap: "1.5rem",
-                alignItems: "flex-start",
                 background: "rgba(255,255,255,0.03)",
                 padding: "2rem",
                 borderRadius: "24px",
@@ -371,13 +490,12 @@ const Editor = ({ initialData, onSave, onBack }) => {
                 boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
               }}
             >
-              {/* Speaker Column */}
+              {/* Speaker Selector (Custom Style) */}
               <div
                 style={{
                   display: "flex",
                   flexDirection: "column",
                   gap: "0.75rem",
-                  width: "100px",
                 }}
               >
                 <label
@@ -389,74 +507,86 @@ const Editor = ({ initialData, onSave, onBack }) => {
                     letterSpacing: "0.05em",
                   }}
                 >
-                  คนพูด
+                  {t.speaker}
                 </label>
-                <select
-                  value={s.speaker}
-                  onChange={(e) =>
-                    handleFieldChange(idx, "speaker", e.target.value)
-                  }
+                <button
+                  onClick={() => openSpeakerPicker(idx)}
                   style={{
-                    padding: "1rem",
-                    borderRadius: "16px",
-                    background: "var(--bg-dark)",
-                    color: "white",
-                    border: "2px solid rgba(99, 102, 241, 0.2)",
                     width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "1.25rem 2rem",
+                    borderRadius: "20px",
                     fontSize: "1.25rem",
                     fontWeight: "800",
-                    textAlign: "center",
-                    marginBottom: 0,
+                    background: "rgba(0,0,0,0.4)",
+                    border: "2px solid rgba(99, 102, 241, 0.2)",
+                    color: "white",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
                   }}
+                  className="btn-voice-picker"
                 >
-                  {speakers.map((char) => (
-                    <option key={char} value={char}>
-                      {char}
-                    </option>
-                  ))}
-                </select>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "1rem",
+                    }}
+                  >
+                    <Mic2 size={24} color="var(--primary)" />
+                    <span>{s.speaker}</span>
+                  </div>
+                  <ChevronRight size={24} opacity={0.5} />
+                </button>
               </div>
 
-              {/* Text Column */}
+              {/* Text Area */}
               <div
                 style={{
-                  flex: 1,
                   display: "flex",
-                  flexDirection: "column",
-                  gap: "0.75rem",
+                  gap: "1.5rem",
+                  alignItems: "flex-end",
                 }}
               >
-                <label
+                <div
                   style={{
-                    fontSize: "0.85rem",
-                    fontWeight: 600,
-                    color: "var(--text-dim)",
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.75rem",
                   }}
                 >
-                  ข้อความประโยคที่ {idx + 1}
-                </label>
-                <textarea
-                  placeholder="พิมพ์ภาษาจีนที่นี่..."
-                  value={s.text}
-                  onChange={(e) =>
-                    handleFieldChange(idx, "text", e.target.value)
-                  }
-                  rows={2}
-                  style={{
-                    marginBottom: 0,
-                    padding: "1.5rem",
-                    fontSize: "1.25rem",
-                    borderRadius: "18px",
-                    background: "rgba(0,0,0,0.4)",
-                    border: "1px solid rgba(255, 255, 255, 0.1)",
-                    lineHeight: "1.6",
-                    resize: "none",
-                  }}
-                />
-              </div>
+                  <label
+                    style={{
+                      fontSize: "0.85rem",
+                      fontWeight: 600,
+                      color: "var(--text-dim)",
+                    }}
+                  >
+                    {t.sentenceNum} {idx + 1}
+                  </label>
+                  <textarea
+                    placeholder={t.chinesePlaceholder}
+                    value={s.text}
+                    onChange={(e) =>
+                      handleFieldChange(idx, "text", e.target.value)
+                    }
+                    rows={2}
+                    style={{
+                      marginBottom: 0,
+                      padding: "1.5rem",
+                      fontSize: "1.25rem",
+                      borderRadius: "18px",
+                      background: "rgba(0,0,0,0.4)",
+                      border: "1px solid rgba(255, 255, 255, 0.1)",
+                      lineHeight: "1.6",
+                      resize: "none",
+                    }}
+                  />
+                </div>
 
-              {/* Actions Column */}
-              <div style={{ paddingTop: "2.4rem" }}>
                 <button
                   className="btn btn-danger"
                   style={{
@@ -467,10 +597,11 @@ const Editor = ({ initialData, onSave, onBack }) => {
                     background: "rgba(239, 68, 68, 0.1)",
                     border: "1px solid rgba(239, 68, 68, 0.2)",
                     minHeight: "auto",
+                    marginBottom: "4px",
                   }}
                   onClick={() => handleRemoveSentence(idx)}
                   disabled={sentences.length === 1}
-                  title="ลบประโยคนี้"
+                  title={t.delete}
                 >
                   <Trash2 size={24} />
                 </button>
@@ -493,7 +624,7 @@ const Editor = ({ initialData, onSave, onBack }) => {
           fontSize: "1.1rem",
         }}
       >
-        <Plus size={24} /> เพิ่มประโยคถัดไป
+        <Plus size={24} /> {t.addNext}
       </button>
 
       <div style={{ display: "flex", gap: "1.5rem" }}>
@@ -508,14 +639,94 @@ const Editor = ({ initialData, onSave, onBack }) => {
             borderRadius: "24px",
           }}
         >
-          <Save size={24} /> บันทึกชุดบทพูดทั้งหมด
+          <Save size={24} /> {t.saveSet}
         </button>
       </div>
+
+      {/* Speaker Picker Modal */}
+      <AnimatePresence>
+        {isSpeakerPickerOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: "rgba(0,0,0,0.85)",
+              backdropFilter: "blur(10px)",
+              zIndex: 2000,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "2rem",
+            }}
+            onClick={() => setIsSpeakerPickerOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="glass-card"
+              style={{
+                width: "100%",
+                maxWidth: "500px",
+                maxHeight: "70vh",
+                overflowY: "auto",
+                padding: "2rem",
+                display: "grid",
+                gridTemplateColumns: "repeat(4, 1fr)",
+                gap: "1rem",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div
+                style={{
+                  gridColumn: "span 4",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "1rem",
+                }}
+              >
+                <h3 style={{ margin: 0 }}>{t.speaker}</h3>
+                <button
+                  className="btn btn-secondary"
+                  style={{ minHeight: "auto", padding: "0.5rem" }}
+                  onClick={() => setIsSpeakerPickerOpen(false)}
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              {speakers.map((char) => (
+                <button
+                  key={char}
+                  onClick={() => selectSpeaker(char)}
+                  className={`btn ${sentences[activeSentenceIndex]?.speaker === char ? "btn-primary" : "btn-secondary"}`}
+                  style={{
+                    padding: "1.5rem",
+                    fontSize: "1.5rem",
+                    fontWeight: 900,
+                    aspectRatio: "1/1",
+                    borderRadius: "15px",
+                  }}
+                >
+                  {char}
+                </button>
+              ))}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
 
-const Reader = ({ set, onBack }) => {
+const Reader = ({ set, onBack, t }) => {
   const sentences = useMemo(() => splitSentences(set.content), [set.content]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -628,10 +839,10 @@ const Reader = ({ set, onBack }) => {
   // Button Style logic
   const isInitialStart = currentIndex === 0 && !hasStartedSet;
   const mainButtonText = isInitialStart
-    ? "เริ่มฟังบทพูด"
+    ? t.startListen
     : isSpeaking
-      ? "กำลังพูด..."
-      : "ฟังอีกครั้ง";
+      ? t.speaking
+      : t.listenAgain;
   const mainButtonColor = isInitialStart
     ? "linear-gradient(135deg, #10b981, #059669)" // Green for Start
     : "linear-gradient(135deg, #6366f1, #8b5cf6)"; // Blue/Purple for Repeat
@@ -648,7 +859,7 @@ const Reader = ({ set, onBack }) => {
         onClick={onBack}
         style={{ marginBottom: "2rem" }}
       >
-        <ArrowLeft size={20} /> กลับหน้าหลัก
+        <ArrowLeft size={20} /> {t.backToHome}
       </button>
 
       <div className="glass-card">
@@ -688,14 +899,16 @@ const Reader = ({ set, onBack }) => {
                   marginTop: "0.5rem",
                 }}
               >
-                ลำดับที่ {currentIndex + 1} จาก {sentences.length}
+                {t.setCount
+                  .replace("{current}", currentIndex + 1)
+                  .replace("{total}", sentences.length)}
               </p>
             </div>
             <button
               className="btn btn-secondary"
               style={{ width: "60px", height: "60px", borderRadius: "50%" }}
               onClick={handleRestart}
-              title="เริ่มใหม่"
+              title={t.restart}
             >
               <RotateCcw size={24} />
             </button>
@@ -712,7 +925,7 @@ const Reader = ({ set, onBack }) => {
                     color: "#ec4899",
                   }}
                 >
-                  กำลังโหลดเสียง...
+                  {t.loadingVoices}
                 </div>
               ) : (
                 <button
@@ -743,7 +956,7 @@ const Reader = ({ set, onBack }) => {
                         maxWidth: "250px",
                       }}
                     >
-                      {selectedVoiceName || "เลือกเสียงพูด (อัตโนมัติ)"}
+                      {selectedVoiceName || t.autoChinese}
                     </span>
                   </div>
                   <ChevronRight size={24} opacity={0.5} />
@@ -801,7 +1014,7 @@ const Reader = ({ set, onBack }) => {
                     marginBottom: "1rem",
                   }}
                 >
-                  <h3 style={{ margin: 0 }}>เลือกเสียงพูด</h3>
+                  <h3 style={{ margin: 0 }}>{t.selectVoice}</h3>
                   <button
                     className="btn btn-secondary"
                     style={{ minHeight: "auto", padding: "0.5rem" }}
@@ -826,7 +1039,7 @@ const Reader = ({ set, onBack }) => {
                       setIsVoicePickerOpen(false);
                     }}
                   >
-                    อัตโนมัติ (ภาษาจีน)
+                    {t.autoChinese}
                   </button>
 
                   {(voices.some(
@@ -934,7 +1147,7 @@ const Reader = ({ set, onBack }) => {
                   opacity: 0.8,
                 }}
               >
-                ผู้พูด {currentSentence.speaker}
+                {t.speakerLabel} {currentSentence.speaker}
               </div>
 
               {/* Revealable Text */}
@@ -966,7 +1179,7 @@ const Reader = ({ set, onBack }) => {
                       opacity: 0.8,
                     }}
                   >
-                    แสดงข้อความภาษาจีน
+                    {t.showChinese}
                   </button>
                 )}
               </div>
@@ -1028,7 +1241,7 @@ const Reader = ({ set, onBack }) => {
             <div
               style={{ color: "#ec4899", fontWeight: 600, fontSize: "1.4rem" }}
             >
-              จบชุดบทพูดแล้ว! 🎉
+              {t.endOfSet}
             </div>
             <button
               className="btn btn-primary"
