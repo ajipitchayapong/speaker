@@ -84,11 +84,11 @@ const App = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
           >
-            <header style={{ marginBottom: '5rem', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '2rem', alignItems: 'center' }}>
-              <h1 style={{ margin: 0 }}>Chinese Reader AI</h1>
-              <h2 style={{ margin: 0 }}>ฝึกฟังและอ่านภาษาจีนทีละประโยค</h2>
-              <button className="btn btn-primary" onClick={handleCreateNew} style={{ padding: '1.25rem 2.5rem', fontSize: '1.2rem' }}>
-                <Plus size={24} /> เพิ่มชุดบทพูดใหม่
+            <header style={{ marginBottom: '6rem', marginTop: '2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '3rem', alignItems: 'center' }}>
+              <h1 style={{ margin: 0, fontSize: '3.5rem' }}>Chinese Reader AI</h1>
+              <h2 style={{ margin: 0, fontSize: '1.8rem', color: 'rgba(255,255,255,0.7)' }}>ฝึกฟังและอ่านภาษาจีนทีละประโยค</h2>
+              <button className="btn btn-primary" onClick={handleCreateNew} style={{ padding: '1.5rem 3.5rem', fontSize: '1.3rem', borderRadius: '25px', marginTop: '1rem' }}>
+                <Plus size={28} /> เพิ่มชุดบทพูดใหม่
               </button>
             </header>
 
