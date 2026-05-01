@@ -11,8 +11,13 @@ import {
   Save,
   X,
   Edit2,
+  LogIn,
+  LogOut,
+  Download,
+  Upload,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "./supabaseClient";
 
 // Utility to split text into objects: { speaker, text }
 const splitSentences = (text) => {
@@ -70,6 +75,8 @@ const translations = {
     confirmDeleteMsg:
       "คุณแน่ใจหรือไม่ว่าต้องการลบชุดบทเรียนนี้? การกระทำนี้ไม่สามารถย้อนกลับได้",
     confirm: "ลบเลย",
+    loginWithGoogle: "เข้าสู่ระบบด้วย Google",
+    logout: "ออกจากระบบ",
   },
   en: {
     title: "Chinese Reader AI",
@@ -112,6 +119,8 @@ const translations = {
     confirmDeleteMsg:
       "Are you sure you want to delete this lesson set? This action cannot be undone.",
     confirm: "Delete",
+    loginWithGoogle: "Login with Google",
+    logout: "Logout",
   },
 };
 
@@ -124,37 +133,87 @@ const App = () => {
   const [isLangPickerOpen, setIsLangPickerOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [setToDeleteId, setSetToDeleteId] = useState(null);
+  const [user, setUser] = useState(null);
 
   const t = translations[lang];
 
-  // Load sets and language from localStorage
+  // Auth State
   useEffect(() => {
-    const savedSets = localStorage.getItem("tts-speech-sets");
-    const savedLang = localStorage.getItem("tts-app-lang");
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
 
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleGoogleLogin = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin,
+      },
+    });
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
+  // Load sets from Supabase or localStorage
+  const loadSets = async () => {
+    if (user) {
+      const { data, error } = await supabase
+        .from("lesson_sets")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (!error && data) {
+        const mappedData = data.map((s) => ({
+          id: s.id,
+          title: s.title,
+          content: s.content,
+          isCloud: true,
+        }));
+        setSets(mappedData);
+        return;
+      }
+    }
+
+    const savedSets = localStorage.getItem("tts-speech-sets");
+    if (savedSets) {
+      setSets(JSON.parse(savedSets));
+    } else {
+      const defaultSet = {
+        id: Date.now(),
+        title: translations[lang].exampleTitle,
+        content: translations[lang].exampleContent,
+      };
+      setSets([defaultSet]);
+    }
+  };
+
+  useEffect(() => {
+    loadSets();
+  }, [user]);
+
+  // Load language from localStorage
+  useEffect(() => {
+    const savedLang = localStorage.getItem("tts-app-lang");
     if (savedLang) {
       setLang(savedLang);
     } else {
-      // Auto-detect browser language for first-time visitors
       const browserLang = navigator.language || navigator.userLanguage || "en";
       const initialLang = browserLang.toLowerCase().startsWith("th")
         ? "th"
         : "en";
       setLang(initialLang);
       localStorage.setItem("tts-app-lang", initialLang);
-    }
-
-    if (savedSets) {
-      setSets(JSON.parse(savedSets));
-    } else {
-      // Default set for first time users
-      const defaultSet = {
-        id: Date.now(),
-        title: translations.th.exampleTitle,
-        content: translations.th.exampleContent,
-      };
-      setSets([defaultSet]);
-      localStorage.setItem("tts-speech-sets", JSON.stringify([defaultSet]));
     }
   }, []);
 
@@ -178,9 +237,15 @@ const App = () => {
     setIsDeleteModalOpen(true);
   };
 
-  const confirmDelete = () => {
-    const newSets = sets.filter((s) => s.id !== setToDeleteId);
-    saveToStorage(newSets);
+  const confirmDelete = async () => {
+    const setToDelete = sets.find((s) => s.id === setToDeleteId);
+    if (user && setToDelete?.isCloud) {
+      await supabase.from("lesson_sets").delete().eq("id", setToDeleteId);
+      await loadSets();
+    } else {
+      const newSets = sets.filter((s) => s.id !== setToDeleteId);
+      saveToStorage(newSets);
+    }
     setIsDeleteModalOpen(false);
     setSetToDeleteId(null);
   };
@@ -190,18 +255,90 @@ const App = () => {
     setView("reader");
   };
 
-  const handleSaveSet = (title, content) => {
-    let newSets;
-    if (editingSet?.id) {
-      newSets = sets.map((s) =>
-        s.id === editingSet.id ? { ...s, title, content } : s,
-      );
+  const handleSaveSet = async (title, content) => {
+    if (user) {
+      if (editingSet?.id && editingSet.isCloud) {
+        await supabase
+          .from("lesson_sets")
+          .update({ title, content })
+          .eq("id", editingSet.id);
+      } else {
+        await supabase
+          .from("lesson_sets")
+          .insert([{ title, content, user_id: user.id }]);
+      }
+      await loadSets();
     } else {
-      newSets = [...sets, { id: Date.now(), title, content }];
+      let newSets;
+      if (editingSet?.id) {
+        newSets = sets.map((s) =>
+          s.id === editingSet.id ? { ...s, title, content } : s,
+        );
+      } else {
+        newSets = [...sets, { id: Date.now(), title, content }];
+      }
+      saveToStorage(newSets);
     }
-    saveToStorage(newSets);
     setView("home");
     setEditingSet(null);
+  };
+
+  const handleExport = () => {
+    const exportData = sets.map((s) => ({
+      title: s.title,
+      content: s.content,
+    }));
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `speaker-backup-${new Date().toISOString().split("T")[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const importedSets = JSON.parse(event.target.result);
+        if (!Array.isArray(importedSets)) throw new Error("Invalid format");
+
+        const validatedSets = importedSets.filter((s) => s.title && s.content);
+
+        if (user) {
+          const insertData = validatedSets.map((s) => ({
+            title: s.title,
+            content: s.content,
+            user_id: user.id,
+          }));
+          await supabase.from("lesson_sets").insert(insertData);
+          await loadSets();
+        } else {
+          const newSets = [
+            ...sets,
+            ...validatedSets.map((s) => ({
+              ...s,
+              id: Date.now() + Math.random(),
+            })),
+          ];
+          saveToStorage(newSets);
+        }
+        alert(lang === "th" ? "นำเข้าข้อมูลสำเร็จ!" : "Imported successfully!");
+      } catch (err) {
+        alert(
+          (lang === "th" ? "เกิดข้อผิดพลาด: " : "Error: ") + (err.message || "")
+        );
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = null;
   };
 
   return (
@@ -226,52 +363,166 @@ const App = () => {
             <div
               style={{
                 display: "flex",
-                justifyContent: "flex-end",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: "0.75rem",
                 marginBottom: "1rem",
               }}
             >
-              <button
-                className="btn btn-secondary"
-                onClick={handleToggleLang}
+              {/* Left Side: Data Management */}
+              <div style={{ display: "flex", gap: "0.75rem" }}>
+                <button
+                  className="btn btn-secondary"
+                  onClick={handleExport}
+                  style={{
+                    fontSize: "0.8rem",
+                    padding: "0.5rem 0.75rem",
+                    gap: "0.4rem",
+                    minHeight: "auto",
+                    borderRadius: "10px",
+                    background: "rgba(255,255,255,0.05)",
+                  }}
+                  title={lang === "th" ? "สำรองข้อมูล" : "Backup"}
+                >
+                  <Download size={14} />
+                  <span style={{ fontWeight: 600 }}>
+                    {lang === "th" ? "สำรอง" : "Backup"}
+                  </span>
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => document.getElementById("import-input").click()}
+                  style={{
+                    fontSize: "0.8rem",
+                    padding: "0.5rem 0.75rem",
+                    gap: "0.4rem",
+                    minHeight: "auto",
+                    borderRadius: "10px",
+                    background: "rgba(255,255,255,0.05)",
+                  }}
+                  title={lang === "th" ? "นำเข้าข้อมูล" : "Import"}
+                >
+                  <Upload size={14} />
+                  <span style={{ fontWeight: 600 }}>
+                    {lang === "th" ? "นำเข้า" : "Import"}
+                  </span>
+                </button>
+                <input
+                  id="import-input"
+                  type="file"
+                  accept=".json"
+                  style={{ display: "none" }}
+                  onChange={handleImport}
+                />
+              </div>
+
+              {/* Right Side: Language & Auth */}
+              <div
                 style={{
-                  minHeight: "50px",
-                  padding: "0 1.5rem",
-                  borderRadius: "15px",
-                  fontSize: "1rem",
-                  background: "rgba(0,0,0,0.4)",
-                  border: "1px solid rgba(255,255,255,0.1)",
                   display: "flex",
+                  gap: "0.75rem",
                   alignItems: "center",
-                  gap: "1rem",
-                  width: "fit-content",
-                  justifyContent: "space-between",
-                  whiteSpace: "nowrap",
                 }}
               >
-                <div
+                {/* Language Toggle */}
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setIsLangPickerOpen(true)}
                   style={{
+                    minHeight: "auto",
+                    padding: "0.5rem 1rem",
+                    borderRadius: "12px",
+                    fontSize: "0.85rem",
+                    background: "rgba(255,255,255,0.05)",
                     display: "flex",
                     alignItems: "center",
-                    gap: "0.75rem",
+                    gap: "0.5rem",
                   }}
                 >
                   <div
                     style={{
-                      color: "var(--primary)",
+                      width: "20px",
+                      height: "20px",
+                      borderRadius: "50%",
+                      background: "var(--primary)",
+                      color: "white",
+                      fontSize: "10px",
                       display: "flex",
                       alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: 800,
                     }}
                   >
-                    <Mic2 size={18} style={{ opacity: 0.8 }} />
+                    {lang.toUpperCase()}
                   </div>
                   <span style={{ fontWeight: 600 }}>
                     {lang === "th" ? "ภาษาไทย" : "English"}
                   </span>
-                </div>
-                <ChevronRight size={16} opacity={0.5} />
-              </button>
+                </button>
+
+                {/* Auth Section */}
+                {!user ? (
+                  <button
+                    className="btn btn-secondary"
+                    onClick={handleGoogleLogin}
+                    style={{
+                      minHeight: "auto",
+                      padding: "0.5rem 1rem",
+                      borderRadius: "12px",
+                      fontSize: "0.85rem",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                      background: "rgba(255,255,255,0.05)",
+                    }}
+                  >
+                    <LogIn size={16} />
+                    {t.loginWithGoogle}
+                  </button>
+                ) : (
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: "1rem" }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
+                      }}
+                    >
+                      <img
+                        src={user.user_metadata.avatar_url}
+                        style={{
+                          width: "30px",
+                          height: "30px",
+                          borderRadius: "50%",
+                        }}
+                        alt="avatar"
+                      />
+                      <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>
+                        {user.user_metadata.full_name}
+                      </span>
+                    </div>
+                    <button
+                      className="btn btn-secondary"
+                      onClick={handleLogout}
+                      style={{
+                        minHeight: "auto",
+                        padding: "0.5rem 1rem",
+                        borderRadius: "12px",
+                        fontSize: "0.85rem",
+                        background: "rgba(255,255,255,0.05)",
+                      }}
+                    >
+                      <LogOut size={16} style={{ marginRight: "0.4rem" }} />
+                      {t.logout}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
+            {/* Modals */}
             <AnimatePresence>
               {isLangPickerOpen && (
                 <motion.div
@@ -284,9 +535,9 @@ const App = () => {
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    background: "rgba(0,0,0,0.85)",
+                    background: "rgba(0,0,0,0.8)",
                     backdropFilter: "blur(10px)",
-                    zIndex: 3000,
+                    zIndex: 2000,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -295,57 +546,42 @@ const App = () => {
                   onClick={() => setIsLangPickerOpen(false)}
                 >
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
                     className="glass-card"
                     style={{
                       width: "100%",
                       maxWidth: "400px",
-                      padding: "2rem",
+                      padding: "1.5rem",
                       display: "flex",
                       flexDirection: "column",
                       gap: "1rem",
                     }}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        marginBottom: "1rem",
-                      }}
-                    >
-                      <h3 style={{ margin: 0 }}>Language Selection</h3>
-                      <button
-                        className="btn btn-secondary"
-                        style={{ minHeight: "auto", padding: "0.5rem" }}
-                        onClick={() => setIsLangPickerOpen(false)}
-                      >
-                        <X size={24} />
-                      </button>
-                    </div>
-
+                    <h3 style={{ margin: 0, textAlign: "center" }}>
+                      Select Language
+                    </h3>
                     <button
-                      onClick={() => selectLang("th")}
                       className={`btn ${lang === "th" ? "btn-primary" : "btn-secondary"}`}
+                      onClick={() => {
+                        setLang("th");
+                        localStorage.setItem("tts-app-lang", "th");
+                        setIsLangPickerOpen(false);
+                      }}
                       style={{
-                        padding: "1.5rem",
                         justifyContent: "flex-start",
-                        gap: "1.5rem",
-                        fontSize: "1.2rem",
+                        gap: "1rem",
+                        padding: "1rem",
                       }}
                     >
                       <div
                         style={{
-                          width: "45px",
-                          height: "45px",
-                          borderRadius: "10px",
-                          background:
-                            lang === "th"
-                              ? "rgba(255,255,255,0.2)"
-                              : "rgba(99, 102, 241, 0.1)",
+                          width: "32px",
+                          height: "32px",
+                          borderRadius: "50%",
+                          background: "#fff",
+                          color: "#000",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -354,28 +590,28 @@ const App = () => {
                       >
                         TH
                       </div>
-                      <span style={{ fontWeight: 700 }}>ภาษาไทย (Thai)</span>
+                      <span style={{ fontWeight: 700 }}>ภาษาไทย</span>
                     </button>
-
                     <button
-                      onClick={() => selectLang("en")}
                       className={`btn ${lang === "en" ? "btn-primary" : "btn-secondary"}`}
+                      onClick={() => {
+                        setLang("en");
+                        localStorage.setItem("tts-app-lang", "en");
+                        setIsLangPickerOpen(false);
+                      }}
                       style={{
-                        padding: "1.5rem",
                         justifyContent: "flex-start",
-                        gap: "1.5rem",
-                        fontSize: "1.2rem",
+                        gap: "1rem",
+                        padding: "1rem",
                       }}
                     >
                       <div
                         style={{
-                          width: "45px",
-                          height: "45px",
-                          borderRadius: "10px",
-                          background:
-                            lang === "en"
-                              ? "rgba(255,255,255,0.2)"
-                              : "rgba(99, 102, 241, 0.1)",
+                          width: "32px",
+                          height: "32px",
+                          borderRadius: "50%",
+                          background: "#fff",
+                          color: "#000",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -432,6 +668,7 @@ const App = () => {
               }}
               className="custom-scrollbar"
             >
+
               <div className="sets-grid">
                 {/* Add New Card */}
                 <motion.div
