@@ -363,13 +363,30 @@ const Reader = ({ set, onBack }) => {
     }
   }
 
+  const [hasStartedSet, setHasStartedSet] = useState(false)
+
+  // Reset state when restarting
   const handleRestart = () => {
     setCurrentIndex(0)
-    speak(0)
+    setHasStartedSet(false)
+    setShowText(false)
+  }
+
+  // Handle Main Button Click
+  const handleMainButtonClick = () => {
+    if (!hasStartedSet) setHasStartedSet(true)
+    speak(currentIndex)
   }
 
   const progress = ((currentIndex + 1) / sentences.length) * 100
   const currentSentence = sentences[currentIndex]
+
+  // Button Style logic
+  const isInitialStart = currentIndex === 0 && !hasStartedSet
+  const mainButtonText = isInitialStart ? 'เริ่มฟังบทพูด' : (isSpeaking ? 'กำลังพูด...' : 'ฟังอีกครั้ง')
+  const mainButtonColor = isInitialStart 
+    ? 'linear-gradient(135deg, #10b981, #059669)' // Green for Start
+    : 'linear-gradient(135deg, #6366f1, #8b5cf6)' // Blue/Purple for Repeat
 
   return (
     <motion.div 
@@ -482,10 +499,18 @@ const Reader = ({ set, onBack }) => {
           
           <button 
             className="btn btn-primary" 
-            style={{ padding: '1.5rem 4rem', fontSize: '1.5rem', borderRadius: '30px', flex: 1, maxWidth: '400px' }} 
-            onClick={() => speak(currentIndex)}
+            style={{ 
+              padding: '1.5rem 4rem', 
+              fontSize: '1.5rem', 
+              borderRadius: '30px', 
+              flex: 1, 
+              maxWidth: '400px',
+              background: mainButtonColor,
+              boxShadow: isInitialStart ? '0 10px 30px rgba(16, 185, 129, 0.3)' : '0 10px 30px rgba(99, 102, 241, 0.3)'
+            }} 
+            onClick={handleMainButtonClick}
           >
-            <Mic2 size={32} /> {isSpeaking ? 'กำลังพูด...' : 'ฟังอีกครั้ง'}
+            <Mic2 size={32} /> {mainButtonText}
           </button>
 
           <button className="btn btn-secondary" style={{ borderRadius: '25px', width: '80px' }} onClick={handleNext} disabled={currentIndex === sentences.length - 1}>
