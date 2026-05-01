@@ -99,16 +99,17 @@ const App = () => {
                   <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
                     {set.content.replace(/\|\|\|/g, ' ')}
                   </p>
-                  <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ color: '#6366f1', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: 600 }}>
-                      <Play size={16} /> เริ่มอ่าน
+                  <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div style={{ color: '#6366f1', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, fontSize: '1.2rem', padding: '0.5rem' }}>
+                      <Play size={20} /> เริ่มอ่าน
                     </div>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button className="btn btn-secondary" style={{ padding: '0.5rem', minHeight: 'auto' }} onClick={(e) => handleEditSet(set, e)} title="แก้ไข">
-                        <Edit2 size={16} />
+                    
+                    <div style={{ display: 'flex', gap: '0.75rem' }}>
+                      <button className="btn btn-secondary" style={{ flex: 1, padding: '1rem' }} onClick={(e) => handleEditSet(set, e)}>
+                        <Edit2 size={20} /> แก้ไข
                       </button>
-                      <button className="btn btn-danger" style={{ padding: '0.5rem', minHeight: 'auto' }} onClick={(e) => handleDeleteSet(set.id, e)} title="ลบ">
-                        <Trash2 size={16} />
+                      <button className="btn btn-danger" style={{ flex: 1, padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#f87171' }} onClick={(e) => handleDeleteSet(set.id, e)}>
+                        <Trash2 size={20} /> ลบ
                       </button>
                     </div>
                   </div>
