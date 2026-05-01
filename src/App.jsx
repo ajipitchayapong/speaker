@@ -212,77 +212,109 @@ const Editor = ({ initialData, onSave, onBack }) => {
       <div style={{ marginBottom: '1.5rem' }}>
         <label style={{ display: 'block', marginBottom: '1rem', fontWeight: 600, color: 'var(--text-dim)' }}>รายการประโยคและการระบุคนพูด</label>
         
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {sentences.map((s, idx) => (
             <motion.div 
               layout
               key={idx} 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
               style={{ 
                 display: 'flex', 
-                gap: '0.75rem', 
+                gap: '1.5rem', 
                 alignItems: 'flex-start',
-                background: 'rgba(255,255,255,0.02)',
-                padding: '1rem',
-                borderRadius: '16px',
-                border: '1px solid rgba(255,255,255,0.05)'
+                background: 'rgba(255,255,255,0.03)',
+                padding: '2rem',
+                borderRadius: '24px',
+                border: '1px solid rgba(255, 255, 255, 0.05)',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
               }}
             >
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--primary)' }}>คนพูด</label>
+              {/* Speaker Column */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100px' }}>
+                <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>คนพูด</label>
                 <select 
                   value={s.speaker} 
                   onChange={(e) => handleFieldChange(idx, 'speaker', e.target.value)}
                   style={{ 
                     padding: '1rem', 
-                    borderRadius: '12px', 
+                    borderRadius: '16px', 
                     background: 'var(--bg-dark)', 
                     color: 'white', 
-                    border: '1px solid var(--glass-border)',
-                    width: '80px',
-                    fontSize: '1.2rem',
-                    fontWeight: 'bold'
+                    border: '2px solid rgba(99, 102, 241, 0.2)',
+                    width: '100%',
+                    fontSize: '1.25rem',
+                    fontWeight: '800',
+                    textAlign: 'center',
+                    marginBottom: 0
                   }}
                 >
                   {speakers.map(char => <option key={char} value={char}>{char}</option>)}
                 </select>
               </div>
 
-              <div style={{ flex: 1 }}>
-                <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-dim)', marginBottom: '0.75rem', display: 'block' }}>ข้อความประโยคที่ {idx + 1}</label>
+              {/* Text Column */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-dim)' }}>ข้อความประโยคที่ {idx + 1}</label>
                 <textarea 
                   placeholder="พิมพ์ภาษาจีนที่นี่..."
                   value={s.text}
                   onChange={(e) => handleFieldChange(idx, 'text', e.target.value)}
                   rows={2}
-                  style={{ marginBottom: 0, padding: '1.25rem', fontSize: '1.2rem' }}
+                  style={{ 
+                    marginBottom: 0, 
+                    padding: '1.5rem', 
+                    fontSize: '1.25rem', 
+                    borderRadius: '18px',
+                    background: 'rgba(0,0,0,0.4)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    lineHeight: '1.6',
+                    resize: 'none'
+                  }}
                 />
               </div>
 
-              <button 
-                className="btn btn-danger" 
-                style={{ marginTop: '2.5rem', padding: '1.25rem', borderRadius: '15px', minHeight: 'auto', width: '60px', height: '60px' }}
-                onClick={() => handleRemoveSentence(idx)}
-                disabled={sentences.length === 1}
-              >
-                <Trash2 size={24} />
-              </button>
+              {/* Actions Column */}
+              <div style={{ paddingTop: '2.4rem' }}>
+                <button 
+                  className="btn btn-danger" 
+                  style={{ 
+                    padding: '0', 
+                    borderRadius: '16px', 
+                    width: '60px', 
+                    height: '60px',
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    border: '1px solid rgba(239, 68, 68, 0.2)',
+                    minHeight: 'auto'
+                  }}
+                  onClick={() => handleRemoveSentence(idx)}
+                  disabled={sentences.length === 1}
+                  title="ลบประโยคนี้"
+                >
+                  <Trash2 size={24} />
+                </button>
+              </div>
             </motion.div>
           ))}
         </div>
       </div>
 
-      <button className="btn btn-secondary" onClick={handleAddSentence} style={{ width: '100%', marginBottom: '2rem', borderStyle: 'dashed' }}>
-        <Plus size={20} /> เพิ่มประโยคถัดไป
+      <button 
+        className="btn btn-secondary" 
+        onClick={handleAddSentence} 
+        style={{ width: '100%', marginBottom: '2.5rem', borderStyle: 'dashed', borderWidth: '2px', background: 'rgba(255,255,255,0.02)', padding: '1.5rem', fontSize: '1.1rem' }}
+      >
+        <Plus size={24} /> เพิ่มประโยคถัดไป
       </button>
 
-      <div style={{ display: 'flex', gap: '1rem' }}>
+      <div style={{ display: 'flex', gap: '1.5rem' }}>
         <button 
           className="btn btn-primary" 
           disabled={!title || sentences.every(s => !s.text.trim())} 
           onClick={handleSave}
-          style={{ flex: 1, padding: '1rem' }}
+          style={{ flex: 1, padding: '1.5rem', fontSize: '1.25rem', borderRadius: '24px' }}
         >
-          <Save size={20} /> บันทึกชุดบทพูด
+          <Save size={24} /> บันทึกชุดบทพูดทั้งหมด
         </button>
       </div>
     </motion.div>
@@ -412,41 +444,66 @@ const Reader = ({ set, onBack }) => {
       </button>
 
       <div className="glass-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', gap: '1rem' }}>
-          <div style={{ flex: 1 }}>
-            <h3 style={{ margin: 0 }}>{set.title}</h3>
-            <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>ลำดับที่ {currentIndex + 1} จาก {sentences.length}</p>
-          </div>
-          
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            {voices.length === 0 ? (
-              <span style={{ fontSize: '0.8rem', color: '#ec4899' }}>กำลังโหลดเสียง...</span>
-            ) : (
-              <select 
-                value={selectedVoiceName} 
-                onChange={(e) => setSelectedVoiceName(e.target.value)}
-                className="btn btn-secondary"
-                style={{ fontSize: '0.8rem', padding: '0.5rem', maxWidth: '200px' }}
-              >
-                <option value="">เลือกเสียง...</option>
-                {voices.some(v => v.lang.includes('zh') || v.lang.includes('CN')) 
-                  ? voices.filter(v => v.lang.includes('zh') || v.lang.includes('CN')).map(v => (
-                      <option key={v.name} value={v.name}>{v.name}</option>
-                    ))
-                  : voices.map(v => (
-                      <option key={v.name} value={v.name}>{v.name} ({v.lang})</option>
-                    ))
-                }
-              </select>
-            )}
-            <button className="btn btn-secondary" onClick={handleRestart} title="เริ่มใหม่">
-              <RotateCcw size={18} />
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '2rem', 
+          marginBottom: '2.5rem',
+          paddingBottom: '2rem',
+          borderBottom: '1px solid rgba(255,255,255,0.05)'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ flex: 1 }}>
+              <h3 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800 }}>{set.title}</h3>
+              <p style={{ color: 'var(--text-dim)', fontSize: '1.1rem', marginTop: '0.5rem' }}>ลำดับที่ {currentIndex + 1} จาก {sentences.length}</p>
+            </div>
+            <button className="btn btn-secondary" style={{ width: '60px', height: '60px', borderRadius: '50%' }} onClick={handleRestart} title="เริ่มใหม่">
+              <RotateCcw size={24} />
             </button>
+          </div>
+
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <div style={{ position: 'relative', flex: 1 }}>
+              <Mic2 size={20} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)', opacity: 0.7 }} />
+              {voices.length === 0 ? (
+                <div style={{ padding: '1.25rem 3.5rem', background: 'rgba(0,0,0,0.3)', borderRadius: '20px', color: '#ec4899' }}>กำลังโหลดเสียง...</div>
+              ) : (
+                <select 
+                  value={selectedVoiceName} 
+                  onChange={(e) => setSelectedVoiceName(e.target.value)}
+                  style={{ 
+                    padding: '1.25rem 1rem 1.25rem 3.5rem', 
+                    borderRadius: '20px', 
+                    background: 'rgba(0,0,0,0.4)', 
+                    border: '1px solid var(--glass-border)',
+                    fontSize: '1.1rem',
+                    fontWeight: 600,
+                    marginBottom: 0,
+                    cursor: 'pointer',
+                    appearance: 'none',
+                    backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpath d=\'m6 9 6 6 6-6\'/%3E%3C/svg%3E")',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 1.25rem center',
+                    backgroundSize: '1.5rem'
+                  }}
+                >
+                  <option value="">เลือกเสียง (อัตโนมัติ)...</option>
+                  {voices.some(v => v.lang.includes('zh') || v.lang.includes('CN')) 
+                    ? voices.filter(v => v.lang.includes('zh') || v.lang.includes('CN')).map(v => (
+                        <option key={v.name} value={v.name} style={{ background: '#1e1e2e', color: 'white', padding: '1rem' }}>{v.name}</option>
+                      ))
+                    : voices.map(v => (
+                        <option key={v.name} value={v.name} style={{ background: '#1e1e2e', color: 'white', padding: '1rem' }}>{v.name} ({v.lang})</option>
+                      ))
+                  }
+                </select>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="progress-bar">
-          <div className="progress-inner" style={{ width: `${progress}%` }}></div>
+        <div className="progress-bar" style={{ height: '8px', borderRadius: '4px', background: 'rgba(255,255,255,0.05)' }}>
+          <div className="progress-inner" style={{ width: `${progress}%`, borderRadius: '4px', boxShadow: '0 0 15px var(--primary)' }}></div>
         </div>
 
         <div className="sentence-container" style={{ flexDirection: 'column', gap: '3rem' }}>
