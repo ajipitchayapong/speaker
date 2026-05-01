@@ -338,6 +338,7 @@ const Reader = ({ set, onBack }) => {
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [selectedVoiceName, setSelectedVoiceName] = useState('')
   const [showText, setShowText] = useState(false)
+  const [isVoicePickerOpen, setIsVoicePickerOpen] = useState(false)
 
   const [voices, setVoices] = useState([])
 
@@ -474,44 +475,112 @@ const Reader = ({ set, onBack }) => {
           </div>
 
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <div style={{ position: 'relative', flex: 1 }}>
-              <Mic2 size={20} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)', opacity: 0.7 }} />
+            <div style={{ flex: 1 }}>
               {voices.length === 0 ? (
-                <div style={{ padding: '1.25rem 3.5rem', background: 'rgba(0,0,0,0.3)', borderRadius: '20px', color: '#ec4899' }}>กำลังโหลดเสียง...</div>
+                <div style={{ padding: '1.25rem 2rem', background: 'rgba(0,0,0,0.3)', borderRadius: '20px', color: '#ec4899' }}>กำลังโหลดเสียง...</div>
               ) : (
-                <select 
-                  value={selectedVoiceName} 
-                  onChange={(e) => setSelectedVoiceName(e.target.value)}
+                <button 
+                  className="btn btn-secondary" 
+                  onClick={() => setIsVoicePickerOpen(true)}
                   style={{ 
-                    padding: '1.25rem 1rem 1.25rem 3.5rem', 
-                    borderRadius: '20px', 
-                    background: 'rgba(0,0,0,0.4)', 
-                    border: '1px solid var(--glass-border)',
+                    width: '100%', 
+                    justifyContent: 'space-between', 
+                    padding: '1.25rem 2rem', 
+                    borderRadius: '20px',
                     fontSize: '1.1rem',
-                    fontWeight: 600,
-                    marginBottom: 0,
-                    cursor: 'pointer',
-                    appearance: 'none',
-                    backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpath d=\'m6 9 6 6 6-6\'/%3E%3C/svg%3E")',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundPosition: 'right 1.25rem center',
-                    backgroundSize: '1.5rem'
+                    background: 'rgba(0,0,0,0.4)'
                   }}
                 >
-                  <option value="">เลือกเสียง (อัตโนมัติ)...</option>
-                  {voices.some(v => v.lang.includes('zh') || v.lang.includes('CN')) 
-                    ? voices.filter(v => v.lang.includes('zh') || v.lang.includes('CN')).map(v => (
-                        <option key={v.name} value={v.name} style={{ background: '#1e1e2e', color: 'white', padding: '1rem' }}>{v.name}</option>
-                      ))
-                    : voices.map(v => (
-                        <option key={v.name} value={v.name} style={{ background: '#1e1e2e', color: 'white', padding: '1rem' }}>{v.name} ({v.lang})</option>
-                      ))
-                  }
-                </select>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <Mic2 size={24} color="var(--primary)" />
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '250px' }}>
+                      {selectedVoiceName || 'เลือกเสียงพูด (อัตโนมัติ)'}
+                    </span>
+                  </div>
+                  <ChevronRight size={24} opacity={0.5} />
+                </button>
               )}
             </div>
           </div>
         </div>
+
+        {/* Voice Picker Overlay */}
+        <AnimatePresence>
+          {isVoicePickerOpen && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{ 
+                position: 'fixed', 
+                top: 0, 
+                left: 0, 
+                right: 0, 
+                bottom: 0, 
+                background: 'rgba(0,0,0,0.85)', 
+                backdropFilter: 'blur(10px)',
+                zIndex: 1000,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '2rem'
+              }}
+              onClick={() => setIsVoicePickerOpen(false)}
+            >
+              <motion.div 
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                className="glass-card"
+                style={{ 
+                  width: '100%', 
+                  maxWidth: '600px', 
+                  maxHeight: '80vh', 
+                  overflowY: 'auto',
+                  padding: '2rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem'
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <h3 style={{ margin: 0 }}>เลือกเสียงพูด</h3>
+                  <button className="btn btn-secondary" style={{ minHeight: 'auto', padding: '0.5rem' }} onClick={() => setIsVoicePickerOpen(false)}>
+                    <X size={24} />
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <button 
+                    className={`btn ${!selectedVoiceName ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ justifyContent: 'flex-start', padding: '1.5rem' }}
+                    onClick={() => { setSelectedVoiceName(''); setIsVoicePickerOpen(false); }}
+                  >
+                    อัตโนมัติ (ภาษาจีน)
+                  </button>
+                  
+                  {(voices.some(v => v.lang.includes('zh') || v.lang.includes('CN')) 
+                    ? voices.filter(v => v.lang.includes('zh') || v.lang.includes('CN'))
+                    : voices
+                  ).map(v => (
+                    <button 
+                      key={v.name}
+                      className={`btn ${selectedVoiceName === v.name ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ justifyContent: 'flex-start', padding: '1.5rem', textAlign: 'left' }}
+                      onClick={() => { setSelectedVoiceName(v.name); setIsVoicePickerOpen(false); }}
+                    >
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                        <span style={{ fontWeight: 700 }}>{v.name}</span>
+                        <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>{v.lang}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="progress-bar" style={{ height: '8px', borderRadius: '4px', background: 'rgba(255,255,255,0.05)' }}>
           <div className="progress-inner" style={{ width: `${progress}%`, borderRadius: '4px', boxShadow: '0 0 15px var(--primary)' }}></div>
