@@ -49,6 +49,58 @@ body {
   overflow: hidden;
 }
 
+@media (max-width: 600px) {
+  .container {
+    padding: 1rem !important;
+  }
+}
+
+.main-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.header-group {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+@media (max-width: 600px) {
+  .main-header {
+    flex-direction: column-reverse;
+    gap: 0.75rem;
+    align-items: stretch;
+  }
+
+  .header-group {
+    width: 100%;
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  /* Row 2: Backup & Import - Split 50/50 */
+  .data-group > button {
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* Row 1: Language (Hug) & Login/User (Fill) */
+  .user-group > button:first-child {
+    flex: 0 1 auto; /* Hug content */
+    white-space: nowrap;
+  }
+
+  .user-group > button:nth-child(2),
+  .user-group > div {
+    flex: 1; /* Fill remaining space */
+    justify-content: center;
+  }
+}
+
 /* Glass UI Elements */
 .glass-card {
   background: var(--glass);

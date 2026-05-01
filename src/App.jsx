@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Plus,
   Play,
@@ -15,6 +15,8 @@ import {
   LogOut,
   Download,
   Upload,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "./supabaseClient";
@@ -360,31 +362,23 @@ const App = () => {
             exit={{ opacity: 0 }}
             style={{ display: "flex", flexDirection: "column", height: "100%" }}
           >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: "0.75rem",
-                marginBottom: "1rem",
-              }}
-            >
-              {/* Left Side: Data Management */}
-              <div style={{ display: "flex", gap: "0.75rem" }}>
+            <div className="main-header">
+              {/* Left Side: Data Management (Backup/Import) */}
+              <div className="header-group data-group">
                 <button
                   className="btn btn-secondary"
                   onClick={handleExport}
                   style={{
-                    fontSize: "0.8rem",
-                    padding: "0.5rem 0.75rem",
-                    gap: "0.4rem",
+                    fontSize: "0.85rem",
+                    padding: "0.5rem 1rem",
+                    gap: "0.5rem",
                     minHeight: "auto",
-                    borderRadius: "10px",
+                    borderRadius: "12px",
                     background: "rgba(255,255,255,0.05)",
                   }}
                   title={lang === "th" ? "สำรองข้อมูล" : "Backup"}
                 >
-                  <Download size={14} />
+                  <Download size={16} />
                   <span style={{ fontWeight: 600 }}>
                     {lang === "th" ? "สำรอง" : "Backup"}
                   </span>
@@ -393,16 +387,16 @@ const App = () => {
                   className="btn btn-secondary"
                   onClick={() => document.getElementById("import-input").click()}
                   style={{
-                    fontSize: "0.8rem",
-                    padding: "0.5rem 0.75rem",
-                    gap: "0.4rem",
+                    fontSize: "0.85rem",
+                    padding: "0.5rem 1rem",
+                    gap: "0.5rem",
                     minHeight: "auto",
-                    borderRadius: "10px",
+                    borderRadius: "12px",
                     background: "rgba(255,255,255,0.05)",
                   }}
                   title={lang === "th" ? "นำเข้าข้อมูล" : "Import"}
                 >
-                  <Upload size={14} />
+                  <Upload size={16} />
                   <span style={{ fontWeight: 600 }}>
                     {lang === "th" ? "นำเข้า" : "Import"}
                   </span>
@@ -417,13 +411,7 @@ const App = () => {
               </div>
 
               {/* Right Side: Language & Auth */}
-              <div
-                style={{
-                  display: "flex",
-                  gap: "0.75rem",
-                  alignItems: "center",
-                }}
-              >
+              <div className="header-group user-group">
                 {/* Language Toggle */}
                 <button
                   className="btn btn-secondary"
@@ -672,7 +660,12 @@ const App = () => {
               <div className="sets-grid">
                 {/* Add New Card */}
                 <motion.div
-                  whileHover={{ scale: 1.02 }}
+                  whileHover={{
+                    backgroundColor: "rgba(99, 102, 241, 0.05)",
+                    borderColor: "var(--primary)",
+                    boxShadow: "0 0 20px rgba(99, 102, 241, 0.2)",
+                  }}
+                  transition={{ duration: 0.05, ease: "easeOut" }}
                   whileTap={{ scale: 0.98 }}
                   className="glass-card"
                   style={{
@@ -715,9 +708,11 @@ const App = () => {
                     key={set.id}
                     className="lesson-card glass-card"
                     whileHover={{
-                      scale: 1.02,
-                      backgroundColor: "rgba(255, 255, 255, 0.05)",
+                      backgroundColor: "rgba(99, 102, 241, 0.08)",
+                      borderColor: "var(--primary)",
+                      boxShadow: "0 0 20px rgba(99, 102, 241, 0.2)",
                     }}
+                    transition={{ duration: 0.05, ease: "easeOut" }}
                     style={{
                       display: "flex",
                       flexDirection: "column",
@@ -725,7 +720,6 @@ const App = () => {
                       minHeight: "220px",
                       padding: "1.75rem",
                       cursor: "pointer",
-                      transition: "background-color 0.2s ease",
                     }}
                     onClick={() => {
                       setCurrentSetId(set.id);
@@ -817,6 +811,7 @@ const App = () => {
             }}
             onSave={handleSaveSet}
             t={t}
+            lang={lang}
           />
         )}
       </AnimatePresence>
@@ -935,7 +930,7 @@ const App = () => {
   );
 };
 
-const Editor = ({ initialData, onSave, onBack, t }) => {
+const Editor = ({ initialData, onSave, onBack, t, lang }) => {
   const [title, setTitle] = useState(initialData?.title || "");
 
   // Parse existing content: "A:text|||B:text"
@@ -953,6 +948,36 @@ const Editor = ({ initialData, onSave, onBack, t }) => {
   );
   const [isSpeakerPickerOpen, setIsSpeakerPickerOpen] = useState(false);
   const [activeSentenceIndex, setActiveSentenceIndex] = useState(null);
+  const [movingIndex, setMovingIndex] = useState(null);
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    if (movingIndex !== null && scrollRef.current) {
+      // 30ms is fast enough for "spamming" but long enough for layout
+      const timeoutId = setTimeout(() => {
+        const container = scrollRef.current;
+        const cardElement = container?.querySelector(
+          `[data-index="${movingIndex}"]`,
+        );
+
+        if (cardElement && container) {
+          const containerRect = container.getBoundingClientRect();
+          const cardRect = cardElement.getBoundingClientRect();
+
+          const relativeTop =
+            cardRect.top - containerRect.top + container.scrollTop;
+          const targetScroll =
+            relativeTop - containerRect.height / 2 + cardRect.height / 2;
+
+          container.scrollTo({
+            top: targetScroll,
+            behavior: "smooth",
+          });
+        }
+      }, 30);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [movingIndex]);
 
   const handleAddSentence = () => {
     const lastSpeaker = sentences[sentences.length - 1]?.speaker || "A";
@@ -971,6 +996,21 @@ const Editor = ({ initialData, onSave, onBack, t }) => {
     const newSentences = [...sentences];
     newSentences[index][field] = value;
     setSentences(newSentences);
+  };
+
+  const moveSentence = (index, direction) => {
+    const newIndex = direction === "up" ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= sentences.length) return;
+
+    const newSentences = [...sentences];
+    const temp = newSentences[index];
+    newSentences[index] = newSentences[newIndex];
+    newSentences[newIndex] = temp;
+
+    setMovingIndex(newIndex);
+    setSentences(newSentences);
+
+    setTimeout(() => setMovingIndex(null), 500); // Reduced for better spamming feel
   };
 
   const openSpeakerPicker = (index) => {
@@ -999,10 +1039,10 @@ const Editor = ({ initialData, onSave, onBack, t }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="glass-card"
+      className="glass-card editor-container"
       style={{
-        maxWidth: "800px",
-        margin: "0 auto",
+        maxWidth: "100%",
+        margin: "0",
         height: "100%",
         display: "flex",
         flexDirection: "column",
@@ -1032,11 +1072,12 @@ const Editor = ({ initialData, onSave, onBack, t }) => {
 
       {/* Scrollable Content Area */}
       <div
+        ref={scrollRef}
         style={{
           flex: 1,
           overflowY: "auto",
-          paddingRight: "0.5rem",
-          marginBottom: "1.5rem",
+          padding: "1rem 1.5rem",
+          margin: "0 -1.5rem 0 -1.5rem",
         }}
         className="custom-scrollbar"
       >
@@ -1080,13 +1121,33 @@ const Editor = ({ initialData, onSave, onBack, t }) => {
               <motion.div
                 layout
                 key={idx}
+                data-index={idx}
                 initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                  scale: movingIndex === idx ? 1.02 : 1,
+                  zIndex: movingIndex === idx ? 10 : 1,
+                  borderColor:
+                    movingIndex === idx
+                      ? "rgba(99, 102, 241, 1)"
+                      : "rgba(255, 255, 255, 0.05)",
+                  backgroundColor:
+                    movingIndex === idx
+                      ? "rgba(99, 102, 241, 0.15)"
+                      : "rgba(255, 255, 255, 0.03)",
+                }}
+                transition={{
+                  layout: { type: "spring", stiffness: 500, damping: 40 },
+                  scale: { duration: 0.15, ease: "easeOut" },
+                  borderColor: { duration: 0.15 },
+                  backgroundColor: { duration: 0.15 },
+                }}
                 style={{
                   display: "flex",
                   flexDirection: "column",
                   gap: "1.5rem",
-                  background: "rgba(255,255,255,0.03)",
+                  backgroundColor: "rgba(255,255,255,0.03)",
                   padding: "1.5rem",
                   borderRadius: "24px",
                   border: "1px solid rgba(255, 255, 255, 0.05)",
@@ -1187,23 +1248,68 @@ const Editor = ({ initialData, onSave, onBack, t }) => {
                       }}
                     />
                   </div>
-                  <button
-                    className="btn btn-secondary"
+                  <div
                     style={{
-                      padding: "0",
-                      borderRadius: "12px",
-                      width: "50px",
-                      height: "50px",
-                      background: "rgba(239, 68, 68, 0.1)",
-                      border: "1px solid rgba(239, 68, 68, 0.2)",
-                      color: "#f87171",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "0.5rem",
                       marginBottom: "4px",
                     }}
-                    onClick={() => handleRemoveSentence(idx)}
-                    disabled={sentences.length === 1}
                   >
-                    <Trash2 size={20} />
-                  </button>
+                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                      <button
+                        className="btn btn-secondary"
+                        style={{
+                          padding: "0",
+                          borderRadius: "12px",
+                          width: "40px",
+                          height: "40px",
+                          background: "rgba(255, 255, 255, 0.05)",
+                          border: "1px solid rgba(255, 255, 255, 0.1)",
+                          color: "white",
+                        }}
+                        onClick={() => moveSentence(idx, "up")}
+                        disabled={idx === 0}
+                        title={lang === "th" ? "เลื่อนขึ้น" : "Move Up"}
+                      >
+                        <ArrowUp size={16} />
+                      </button>
+                      <button
+                        className="btn btn-secondary"
+                        style={{
+                          padding: "0",
+                          borderRadius: "12px",
+                          width: "40px",
+                          height: "40px",
+                          background: "rgba(255, 255, 255, 0.05)",
+                          border: "1px solid rgba(255, 255, 255, 0.1)",
+                          color: "white",
+                        }}
+                        onClick={() => moveSentence(idx, "down")}
+                        disabled={idx === sentences.length - 1}
+                        title={lang === "th" ? "เลื่อนลง" : "Move Down"}
+                      >
+                        <ArrowDown size={16} />
+                      </button>
+                    </div>
+                    <button
+                      className="btn btn-secondary"
+                      style={{
+                        padding: "0",
+                        borderRadius: "12px",
+                        width: "100%",
+                        height: "50px",
+                        background: "rgba(239, 68, 68, 0.1)",
+                        border: "1px solid rgba(239, 68, 68, 0.2)",
+                        color: "#f87171",
+                      }}
+                      onClick={() => handleRemoveSentence(idx)}
+                      disabled={sentences.length === 1}
+                      title={lang === "th" ? "ลบ" : "Delete"}
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             ))}
