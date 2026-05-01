@@ -1,0 +1,509 @@
+import React, { useState, useEffect, useMemo } from 'react'
+import { Plus, Play, Trash2, ArrowLeft, RotateCcw, ChevronRight, ChevronLeft, Mic2, Save, X } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+
+// Utility to split text into objects: { speaker, text }
+const splitSentences = (text) => {
+  if (!text) return []
+  return text.split('|||').filter(s => s.trim()).map(s => {
+    const [speaker, ...textParts] = s.split(':')
+    return { speaker: speaker || 'A', text: textParts.join(':') }
+  })
+}
+
+const App = () => {
+  const [view, setView] = useState('home') // home, reader, editor
+  const [sets, setSets] = useState([])
+  const [currentSetId, setCurrentSetId] = useState(null)
+  const [editingSet, setEditingSet] = useState(null)
+  
+  // Load sets from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('tts-speech-sets')
+    if (saved) {
+      setSets(JSON.parse(saved))
+    } else {
+      // Default set for first time users
+      const defaultSet = {
+        id: Date.now(),
+        title: 'ตัวอย่าง: ภาษาจีนพื้นฐาน',
+        content: '你好！很高兴见到你。|||今天天气很好。|||我们要一起学习中文吗？'
+      }
+      setSets([defaultSet])
+      localStorage.setItem('tts-speech-sets', JSON.stringify([defaultSet]))
+    }
+  }, [])
+
+  // Save sets to localStorage
+  const saveToStorage = (newSets) => {
+    setSets(newSets)
+    localStorage.setItem('tts-speech-sets', JSON.stringify(newSets))
+  }
+
+  const handleDeleteSet = (id, e) => {
+    e.stopPropagation()
+    const newSets = sets.filter(s => s.id !== id)
+    saveToStorage(newSets)
+  }
+
+  const handleStartSet = (set) => {
+    setCurrentSetId(set.id)
+    setView('reader')
+  }
+
+  const handleCreateNew = () => {
+    setEditingSet({ title: '', content: '' })
+    setView('editor')
+  }
+
+  const handleSaveSet = (title, content) => {
+    let newSets
+    if (editingSet?.id) {
+      newSets = sets.map(s => s.id === editingSet.id ? { ...s, title, content } : s)
+    } else {
+      newSets = [...sets, { id: Date.now(), title, content }]
+    }
+    saveToStorage(newSets)
+    setView('home')
+    setEditingSet(null)
+  }
+
+  return (
+    <div className="container">
+      <AnimatePresence mode="wait">
+        {view === 'home' && (
+          <motion.div 
+            key="home"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+          >
+            <header style={{ marginBottom: '3rem', textAlign: 'center' }}>
+              <h1>Chinese Reader AI</h1>
+              <h2>ฝึกฟังและอ่านภาษาจีนทีละประโยค</h2>
+              <button className="btn btn-primary" onClick={handleCreateNew}>
+                <Plus size={20} /> เพิ่มชุดบทพูดใหม่
+              </button>
+            </header>
+
+            <div className="sets-grid">
+              {sets.map(set => (
+                <div key={set.id} className="glass-card" onClick={() => handleStartSet(set)} style={{ cursor: 'pointer', position: 'relative' }}>
+                  <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>{set.title}</h3>
+                  <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
+                    {set.content}
+                  </p>
+                  <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ color: '#6366f1', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: 600 }}>
+                      <Play size={16} /> เริ่มอ่าน
+                    </div>
+                    <button className="btn btn-danger" style={{ padding: '0.5rem' }} onClick={(e) => handleDeleteSet(set.id, e)}>
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {view === 'editor' && (
+          <Editor 
+            initialData={editingSet} 
+            onSave={handleSaveSet} 
+            onBack={() => setView('home')} 
+          />
+        )}
+
+        {view === 'reader' && (
+          <Reader 
+            set={sets.find(s => s.id === currentSetId)} 
+            onBack={() => setView('home')} 
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+const Editor = ({ initialData, onSave, onBack }) => {
+  const [title, setTitle] = useState(initialData?.title || '')
+  
+  // Parse existing content: "A:text|||B:text"
+  const parseContent = (content) => {
+    if (!content) return [{ speaker: 'A', text: '' }]
+    return content.split('|||').map(s => {
+      const [speaker, ...textParts] = s.split(':')
+      return { speaker: speaker || 'A', text: textParts.join(':') }
+    })
+  }
+
+  const [sentences, setSentences] = useState(parseContent(initialData?.content))
+
+  const handleAddSentence = () => {
+    const lastSpeaker = sentences[sentences.length - 1]?.speaker || 'A'
+    // Automatically suggest next speaker (A -> B, B -> A or just keep it)
+    const nextSpeaker = lastSpeaker === 'A' ? 'B' : 'A'
+    setSentences([...sentences, { speaker: nextSpeaker, text: '' }])
+  }
+
+  const handleRemoveSentence = (index) => {
+    if (sentences.length === 1) return
+    const newSentences = [...sentences]
+    newSentences.splice(index, 1)
+    setSentences(newSentences)
+  }
+
+  const handleFieldChange = (index, field, value) => {
+    const newSentences = [...sentences]
+    newSentences[index][field] = value
+    setSentences(newSentences)
+  }
+
+  const handleSave = () => {
+    const content = sentences
+      .filter(s => s.text.trim())
+      .map(s => `${s.speaker}:${s.text}`)
+      .join('|||')
+    onSave(title, content)
+  }
+
+  const speakers = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
+
+  return (
+    <motion.div 
+      key="editor"
+      initial={{ opacity: 0, x: 50 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -50 }}
+      className="glass-card"
+      style={{ maxWidth: '800px', margin: '0 auto' }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <h2 style={{ margin: 0, color: 'white' }}>{initialData?.id ? 'แก้ไขชุดบทพูด' : 'เพิ่มชุดบทพูดใหม่'}</h2>
+        <button className="btn btn-secondary" onClick={onBack}>
+          <X size={20} /> ยกเลิก
+        </button>
+      </div>
+
+      <div style={{ marginBottom: '2rem' }}>
+        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: 'var(--text-dim)' }}>หัวข้อชุดบทพูด</label>
+        <input 
+          placeholder="เช่น บทเรียนที่ 1..." 
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          style={{ marginBottom: 0 }}
+        />
+      </div>
+
+      <div style={{ marginBottom: '1.5rem' }}>
+        <label style={{ display: 'block', marginBottom: '1rem', fontWeight: 600, color: 'var(--text-dim)' }}>รายการประโยคและการระบุคนพูด</label>
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {sentences.map((s, idx) => (
+            <motion.div 
+              layout
+              key={idx} 
+              style={{ 
+                display: 'flex', 
+                gap: '0.75rem', 
+                alignItems: 'flex-start',
+                background: 'rgba(255,255,255,0.02)',
+                padding: '1rem',
+                borderRadius: '16px',
+                border: '1px solid rgba(255,255,255,0.05)'
+              }}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--primary)' }}>คนพูด</label>
+                <select 
+                  value={s.speaker} 
+                  onChange={(e) => handleFieldChange(idx, 'speaker', e.target.value)}
+                  style={{ 
+                    padding: '1rem', 
+                    borderRadius: '12px', 
+                    background: 'var(--bg-dark)', 
+                    color: 'white', 
+                    border: '1px solid var(--glass-border)',
+                    width: '80px',
+                    fontSize: '1.2rem',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  {speakers.map(char => <option key={char} value={char}>{char}</option>)}
+                </select>
+              </div>
+
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-dim)', marginBottom: '0.75rem', display: 'block' }}>ข้อความประโยคที่ {idx + 1}</label>
+                <textarea 
+                  placeholder="พิมพ์ภาษาจีนที่นี่..."
+                  value={s.text}
+                  onChange={(e) => handleFieldChange(idx, 'text', e.target.value)}
+                  rows={2}
+                  style={{ marginBottom: 0, padding: '1.25rem', fontSize: '1.2rem' }}
+                />
+              </div>
+
+              <button 
+                className="btn btn-danger" 
+                style={{ marginTop: '2.5rem', padding: '1.25rem', borderRadius: '15px', minHeight: 'auto', width: '60px', height: '60px' }}
+                onClick={() => handleRemoveSentence(idx)}
+                disabled={sentences.length === 1}
+              >
+                <Trash2 size={24} />
+              </button>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      <button className="btn btn-secondary" onClick={handleAddSentence} style={{ width: '100%', marginBottom: '2rem', borderStyle: 'dashed' }}>
+        <Plus size={20} /> เพิ่มประโยคถัดไป
+      </button>
+
+      <div style={{ display: 'flex', gap: '1rem' }}>
+        <button 
+          className="btn btn-primary" 
+          disabled={!title || sentences.every(s => !s.trim())} 
+          onClick={handleSave}
+          style={{ flex: 1, padding: '1rem' }}
+        >
+          <Save size={20} /> บันทึกชุดบทพูด
+        </button>
+      </div>
+    </motion.div>
+  )
+}
+
+const Reader = ({ set, onBack }) => {
+  const sentences = useMemo(() => splitSentences(set.content), [set.content])
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [isSpeaking, setIsSpeaking] = useState(false)
+  const [selectedVoiceName, setSelectedVoiceName] = useState('')
+  const [showText, setShowText] = useState(false)
+
+  const [voices, setVoices] = useState([])
+
+  // Load voices
+  useEffect(() => {
+    const loadVoices = () => {
+      const availableVoices = window.speechSynthesis.getVoices()
+      setVoices(availableVoices)
+      
+      if (!selectedVoiceName) {
+        const zhVoice = availableVoices.find(v => v.lang.includes('zh') || v.lang.includes('CN'))
+        if (zhVoice) setSelectedVoiceName(zhVoice.name)
+      }
+    }
+    
+    loadVoices()
+    window.speechSynthesis.onvoiceschanged = loadVoices
+    return () => {
+      window.speechSynthesis.onvoiceschanged = null
+    }
+  }, [selectedVoiceName])
+
+  const speak = (index) => {
+    if (!sentences[index]) return
+    window.speechSynthesis.cancel()
+    
+    const utterance = new SpeechSynthesisUtterance(sentences[index].text)
+    
+    let voice = voices.find(v => v.name === selectedVoiceName)
+    if (!voice) {
+      voice = voices.find(v => v.lang.includes('zh') || v.lang.includes('CN'))
+    }
+    
+    if (voice) {
+      utterance.voice = voice
+    }
+    
+    utterance.lang = 'zh-CN'
+    utterance.rate = 0.9
+    
+    utterance.onstart = () => setIsSpeaking(true)
+    utterance.onend = () => setIsSpeaking(false)
+    window.speechSynthesis.speak(utterance)
+  }
+
+  // Reset showText when index changes
+  useEffect(() => {
+    setShowText(false)
+  }, [currentIndex])
+
+  const [hasInteracted, setHasInteracted] = useState(false)
+
+  useEffect(() => {
+    if (voices.length > 0 && hasInteracted) {
+      speak(currentIndex)
+    }
+    return () => window.speechSynthesis.cancel()
+  }, [currentIndex, voices, hasInteracted])
+
+  useEffect(() => {
+    const handleFirstInteraction = () => {
+      setHasInteracted(true)
+      window.removeEventListener('mousedown', handleFirstInteraction)
+    }
+    window.addEventListener('mousedown', handleFirstInteraction)
+    return () => window.removeEventListener('mousedown', handleFirstInteraction)
+  }, [])
+
+  const handleNext = () => {
+    if (currentIndex < sentences.length - 1) {
+      setCurrentIndex(currentIndex + 1)
+    }
+  }
+
+  const handlePrev = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1)
+    }
+  }
+
+  const handleRestart = () => {
+    setCurrentIndex(0)
+    speak(0)
+  }
+
+  const progress = ((currentIndex + 1) / sentences.length) * 100
+  const currentSentence = sentences[currentIndex]
+
+  return (
+    <motion.div 
+      key="reader"
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+    >
+      <button className="btn btn-secondary" onClick={onBack} style={{ marginBottom: '2rem' }}>
+        <ArrowLeft size={20} /> กลับหน้าหลัก
+      </button>
+
+      <div className="glass-card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', gap: '1rem' }}>
+          <div style={{ flex: 1 }}>
+            <h3 style={{ margin: 0 }}>{set.title}</h3>
+            <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>ลำดับที่ {currentIndex + 1} จาก {sentences.length}</p>
+          </div>
+          
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            {voices.length === 0 ? (
+              <span style={{ fontSize: '0.8rem', color: '#ec4899' }}>กำลังโหลดเสียง...</span>
+            ) : (
+              <select 
+                value={selectedVoiceName} 
+                onChange={(e) => setSelectedVoiceName(e.target.value)}
+                className="btn btn-secondary"
+                style={{ fontSize: '0.8rem', padding: '0.5rem', maxWidth: '200px' }}
+              >
+                <option value="">เลือกเสียง...</option>
+                {voices.some(v => v.lang.includes('zh') || v.lang.includes('CN')) 
+                  ? voices.filter(v => v.lang.includes('zh') || v.lang.includes('CN')).map(v => (
+                      <option key={v.name} value={v.name}>{v.name}</option>
+                    ))
+                  : voices.map(v => (
+                      <option key={v.name} value={v.name}>{v.name} ({v.lang})</option>
+                    ))
+                }
+              </select>
+            )}
+            <button className="btn btn-secondary" onClick={handleRestart} title="เริ่มใหม่">
+              <RotateCcw size={18} />
+            </button>
+          </div>
+        </div>
+
+        <div className="progress-bar">
+          <div className="progress-inner" style={{ width: `${progress}%` }}></div>
+        </div>
+
+        <div className="sentence-container" style={{ flexDirection: 'column', gap: '3rem' }}>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentIndex}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2rem' }}
+            >
+              {/* Speaker Indicator */}
+              <div style={{ 
+                width: '180px', 
+                height: '180px', 
+                borderRadius: '50%', 
+                background: 'linear-gradient(135deg, var(--primary), var(--accent))',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '5rem',
+                fontWeight: '900',
+                boxShadow: '0 15px 40px rgba(99, 102, 241, 0.4)',
+                color: 'white',
+                border: '8px solid rgba(255, 255, 255, 0.1)'
+              }}>
+                {currentSentence.speaker}
+              </div>
+              
+              <div style={{ color: 'white', fontSize: '1.5rem', fontWeight: 600, opacity: 0.8 }}>
+                ผู้พูด {currentSentence.speaker}
+              </div>
+
+              {/* Revealable Text */}
+              <div style={{ minHeight: '120px', display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'center' }}>
+                {showText ? (
+                  <motion.div 
+                    initial={{ opacity: 0, filter: 'blur(10px)' }} 
+                    animate={{ opacity: 1, filter: 'blur(0px)' }}
+                    className="sentence-text"
+                  >
+                    {currentSentence.text}
+                  </motion.div>
+                ) : (
+                  <button 
+                    className="btn btn-secondary" 
+                    onClick={() => setShowText(true)} 
+                    style={{ padding: '1.5rem 3rem', fontSize: '1.2rem', borderRadius: '25px', opacity: 0.8 }}
+                  >
+                    แสดงข้อความภาษาจีน
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        <div className="controls" style={{ gap: '1.5rem' }}>
+          <button className="btn btn-secondary" style={{ borderRadius: '25px', width: '80px' }} onClick={handlePrev} disabled={currentIndex === 0}>
+            <ChevronLeft size={32} />
+          </button>
+          
+          <button 
+            className="btn btn-primary" 
+            style={{ padding: '1.5rem 4rem', fontSize: '1.5rem', borderRadius: '30px', flex: 1, maxWidth: '400px' }} 
+            onClick={() => speak(currentIndex)}
+          >
+            <Mic2 size={32} /> {isSpeaking ? 'กำลังพูด...' : 'ฟังอีกครั้ง'}
+          </button>
+
+          <button className="btn btn-secondary" style={{ borderRadius: '25px', width: '80px' }} onClick={handleNext} disabled={currentIndex === sentences.length - 1}>
+            <ChevronRight size={32} />
+          </button>
+        </div>
+        
+        {currentIndex === sentences.length - 1 && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            style={{ textAlign: 'center', marginTop: '2.5rem', color: '#ec4899', fontWeight: 600, fontSize: '1.2rem' }}
+          >
+            จบชุดบทพูดแล้ว! 🎉
+          </motion.div>
+        )}
+      </div>
+    </motion.div>
+  )
+}
+
+export default App
