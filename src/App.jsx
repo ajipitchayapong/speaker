@@ -495,11 +495,20 @@ const Reader = ({ set, onBack }) => {
         
         {currentIndex === sentences.length - 1 && (
           <motion.div 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
-            style={{ textAlign: 'center', marginTop: '2.5rem', color: '#ec4899', fontWeight: 600, fontSize: '1.2rem' }}
+            initial={{ opacity: 0, y: 10 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            style={{ textAlign: 'center', marginTop: '3rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}
           >
-            จบชุดบทพูดแล้ว! 🎉
+            <div style={{ color: '#ec4899', fontWeight: 600, fontSize: '1.4rem' }}>
+              จบชุดบทพูดแล้ว! 🎉
+            </div>
+            <button 
+              className="btn btn-primary" 
+              onClick={handleRestart}
+              style={{ background: 'linear-gradient(135deg, #ec4899, #8b5cf6)', padding: '1rem 3rem' }}
+            >
+              <RotateCcw size={20} /> เริ่มใหม่อีกครั้ง
+            </button>
           </motion.div>
         )}
       </div>
